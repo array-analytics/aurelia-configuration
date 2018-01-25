@@ -49,13 +49,15 @@ var AureliaConfiguration = (function () {
     };
     AureliaConfiguration.prototype.check = function () {
         var hostname = window.location.hostname;
+        if (window.location.port != '')
+            hostname += ':' + window.location.port;
         if (this.environments) {
             for (var env in this.environments) {
                 var hostnames = this.environments[env];
                 if (hostnames) {
                     for (var _i = 0, hostnames_1 = hostnames; _i < hostnames_1.length; _i++) {
                         var host = hostnames_1[_i];
-                        if (hostname.search(host) !== -1) {
+                        if (hostname.search('(?:^|\W)' + host + '(?:$|\W)') !== -1) {
                             this.setEnvironment(env);
                             return;
                         }
@@ -69,6 +71,19 @@ var AureliaConfiguration = (function () {
     };
     AureliaConfiguration.prototype.environmentExists = function () {
         return this.environment in this.obj;
+    };
+    AureliaConfiguration.prototype.getDictValue = function (baseObject, key) {
+        var splitKey = key.split('.');
+        var currentObject = baseObject;
+        splitKey.forEach(function (key) {
+            if (currentObject[key]) {
+                currentObject = currentObject[key];
+            }
+            else {
+                throw 'Key ' + key + ' not found';
+            }
+        });
+        return currentObject;
     };
     AureliaConfiguration.prototype.get = function (key, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
@@ -87,23 +102,27 @@ var AureliaConfiguration = (function () {
                 return returnVal;
             }
         }
-        if (key.indexOf('.') !== -1) {
-            var splitKey = key.split('.');
-            var parent_1 = splitKey[0];
-            var child = splitKey[1];
-            if (!this.environmentEnabled()) {
-                if (this.obj[parent_1]) {
-                    return this.obj[parent_1][child] ? this.obj[parent_1][child] : defaultValue;
+        else {
+            if (this.environmentEnabled()) {
+                if (this.environmentExists()) {
+                    try {
+                        return this.getDictValue(this.obj[this.environment], key);
+                    }
+                    catch (_a) {
+                        if (this.cascade_mode) {
+                            try {
+                                return this.getDictValue(this.obj, key);
+                            }
+                            catch (_b) { }
+                        }
+                    }
                 }
             }
             else {
-                if (this.environmentExists() && this.obj[this.environment][parent_1] && this.obj[this.environment][parent_1][child]) {
-                    returnVal = this.obj[this.environment][parent_1][child];
+                try {
+                    return this.getDictValue(this.obj, key);
                 }
-                else if (this.cascade_mode && this.obj[parent_1] && this.obj[parent_1][child]) {
-                    returnVal = this.obj[parent_1][child];
-                }
-                return returnVal;
+                catch (_c) { }
             }
         }
         return returnVal;
@@ -114,12 +133,12 @@ var AureliaConfiguration = (function () {
         }
         else {
             var splitKey = key.split('.');
-            var parent_2 = splitKey[0];
+            var parent_1 = splitKey[0];
             var child = splitKey[1];
-            if (this.obj[parent_2] === undefined) {
-                this.obj[parent_2] = {};
+            if (this.obj[parent_1] === undefined) {
+                this.obj[parent_1] = {};
             }
-            this.obj[parent_2][child] = val;
+            this.obj[parent_1][child] = val;
         }
     };
     AureliaConfiguration.prototype.merge = function (obj) {
