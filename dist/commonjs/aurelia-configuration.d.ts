@@ -17,6 +17,7 @@ export declare class AureliaConfiguration {
     check(): void;
     environmentEnabled(): boolean;
     environmentExists(): boolean;
+    getDictValue(baseObject: {} | any, key: string): any;
     get(key: string, defaultValue?: any): any;
     set(key: string, val: string): void;
     merge(obj: {} | any): void;
