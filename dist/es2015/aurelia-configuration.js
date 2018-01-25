@@ -49,13 +49,15 @@ var AureliaConfiguration = (function () {
     };
     AureliaConfiguration.prototype.check = function () {
         var hostname = window.location.hostname;
+        if (window.location.port != '')
+            hostname += ':' + window.location.port;
         if (this.environments) {
             for (var env in this.environments) {
                 var hostnames = this.environments[env];
                 if (hostnames) {
                     for (var _i = 0, hostnames_1 = hostnames; _i < hostnames_1.length; _i++) {
                         var host = hostnames_1[_i];
-                        if (hostname.search(host) !== -1) {
+                        if (hostname.search('(?:^|\W)' + host + '(?:$|\W)') !== -1) {
                             this.setEnvironment(env);
                             return;
                         }
